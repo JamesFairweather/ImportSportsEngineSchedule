@@ -40,7 +40,7 @@ namespace ImportSportsEngineSchedule {
 
         static int ExportSportsEngineSchedule(string division, FileInfo scheduleFile, FileInfo mappingCodeFile) {
 
-            var mappingCodeParser = new TextFieldParser(mappingCodeFile.Name);
+            var mappingCodeParser = new TextFieldParser(mappingCodeFile.FullName);
             mappingCodeParser.TextFieldType = FieldType.Delimited;
             mappingCodeParser.SetDelimiters(new string[] { "," });
             while (!mappingCodeParser.EndOfData) {
@@ -51,7 +51,7 @@ namespace ImportSportsEngineSchedule {
             }
 
             // TODO: verify the file could be opened for reading
-            var parser = new TextFieldParser(scheduleFile.Name);
+            var parser = new TextFieldParser(scheduleFile.FullName);
             parser.TextFieldType = FieldType.Delimited;
             parser.SetDelimiters(new string[] { "," });
             bool headerRow = false;
@@ -74,22 +74,27 @@ namespace ImportSportsEngineSchedule {
                     if (time.Hour < 8) {
                         time = time.AddHours(12);
                     }
+                    string field = row[4];
+
+                    if (!teamIdMap.ContainsKey(row[2])) {
+                        Console.WriteLine($"Input error: the team \"{row[2]}\" was not found in the mapping codes file.");
+                        return -1;
+                    }
+
+                    if (!teamIdMap.ContainsKey(row[3])) {
+                        Console.WriteLine($"Input error: the team \"{row[3]}\" was not found in the mapping codes file.");
+                        return -1;
+                    }
+
+                    if (!locationUrlMap.ContainsKey(field)) {
+                        Console.WriteLine($"Input error: unknown field \"{field}\".");
+                        return -1;
+                    }
 
                     string homeTeamId = teamIdMap[row[2]];
                     string awayTeamId = teamIdMap[row[3]];
-                    string field = row[4];
 
-                    swOutputFile.WriteLine(@"{0},{1},{2},{3},,,{4},{5},{6},0,Game,,{7},,1,{8},,,,,,1,,,,,,,",
-                        date.ToShortDateString(),
-                        time.ToString("H:mm"),
-                        date.ToShortDateString(),
-                        time.AddHours(2).ToString("H:mm"),
-                        field,
-                        locationUrlMap[field],
-                        GetLocationDetails(division, field),
-                        homeTeamId,
-                        awayTeamId
-                    );
+                    swOutputFile.WriteLine($"{date.ToShortDateString()},{time.ToString("H:mm")},{date.ToShortDateString()},{time.AddHours(2).ToString("H:mm")},,,{field},{locationUrlMap[field]},{GetLocationDetails(division, field)},0,Game,,{homeTeamId},,1,{awayTeamId},,,,,,1,,,,,,,");
                 }
                 else {
 
